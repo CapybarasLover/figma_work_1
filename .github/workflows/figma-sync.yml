@@ -1,0 +1,28 @@
+name: Figma Changes Tracker
+
+on:
+  schedule:
+    - cron: '0 * * * *'  
+  workflow_dispatch:     
+jobs:
+  check-figma:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Figma file and create Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const response = await fetch(
+              `https://api.figma.com/v1/files/${{ secrets.FIGMA_FILE_ID }}`,
+              { headers: { 'X-Figma-Token': '${{ secrets.FIGMA_TOKEN }}' } }
+            );
+            const data = await response.json();
+            const lastModified = data.lastModified;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Figma Update: ${lastModified}`,
+              body: `Figma файл был изменён: **${data.name}**\n\nПоследнее изменение: ${lastModified}`,
+              labels: ['figma']
+            });
